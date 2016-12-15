@@ -6,8 +6,8 @@ import (
 	uurl "net/url"
 	"time"
 
+	"github.com/guotie/go-metrics"
 	"github.com/influxdata/influxdb/client"
-	"github.com/rcrowley/go-metrics"
 )
 
 type reporter struct {
@@ -103,6 +103,24 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+		case metrics.PeriodCounter:
+			ps := metric.Snapshot()
+			vals := map[string]interface{}{
+				"value": ps.Count(),
+			}
+			periods := ps.Periods()
+			for _, p := range periods {
+				c, r := ps.LatestPeriodCountRate(p)
+				vals[p+"_count"] = c
+				vals[p+"_rate"] = r
+			}
+			pts = append(pts, client.Point{
+				Measurement: fmt.Sprintf("%s.periodcount", name),
+				Tags:        r.tags,
+				Fields:      vals,
+				Time:        now,
+			})
+
 		case metrics.Gauge:
 			ms := metric.Snapshot()
 			pts = append(pts, client.Point{
