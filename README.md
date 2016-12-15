@@ -12,7 +12,7 @@ Usage
 -----
 
 ```go
-import "github.com/vrischmann/go-metrics-influxdb"
+import "github.com/guotie/go-metrics-influxdb"
 
 go influxdb.InfluxDB(
     metrics.DefaultRegistry, // metrics registry
