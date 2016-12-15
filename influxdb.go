@@ -89,6 +89,7 @@ func (r *reporter) run() {
 func (r *reporter) send() error {
 	var pts []client.Point
 
+	//log.Println("reporter ....")
 	r.reg.Each(func(name string, i interface{}) {
 		now := time.Now()
 
@@ -104,6 +105,7 @@ func (r *reporter) send() error {
 				Time: now,
 			})
 		case metrics.PeriodCounter:
+			//log.Println("   period counter ....")
 			ps := metric.Snapshot()
 			vals := map[string]interface{}{
 				"value": ps.Count(),
@@ -203,8 +205,12 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+		default:
+			log.Println("unknown metrics type.")
 		}
 	})
+
+	//log.Println("reporter ", len(pts))
 
 	bps := client.BatchPoints{
 		Points:   pts,
