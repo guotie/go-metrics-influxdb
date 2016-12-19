@@ -111,17 +111,23 @@ func (r *reporter) send() error {
 				"value": ps.Count(),
 			}
 			periods := ps.Periods()
+			insert := false
 			for _, p := range periods {
 				c, r := ps.LatestPeriodCountRate(p)
+				if c >= 0 {
+					insert = true
+				}
 				vals[p+"_count"] = c
 				vals[p+"_rate"] = r
 			}
-			pts = append(pts, client.Point{
-				Measurement: fmt.Sprintf("%s.periodcount", name),
-				Tags:        r.tags,
-				Fields:      vals,
-				Time:        now,
-			})
+			if insert {
+				pts = append(pts, client.Point{
+					Measurement: fmt.Sprintf("%s.periodcount", name),
+					Tags:        r.tags,
+					Fields:      vals,
+					Time:        now,
+				})
+			}
 
 		case metrics.Gauge:
 			ms := metric.Snapshot()
