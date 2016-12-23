@@ -139,6 +139,21 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+
+		case metrics.GaugeMap:
+			ms := metric.Snapshot()
+			keys := ms.Keys()
+			values := map[string]interface{}{}
+			for _, key := range keys {
+				values[key] = ms.Value(key)
+			}
+			pts = append(pts, client.Point{
+				Measurement: fmt.Sprintf("%s.gaugemap", name),
+				Tags:        r.tags,
+				Fields:      values,
+				Time:        now,
+			})
+
 		case metrics.GaugeFloat64:
 			ms := metric.Snapshot()
 			pts = append(pts, client.Point{
@@ -149,6 +164,7 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+
 		case metrics.Histogram:
 			ms := metric.Snapshot()
 			ps := ms.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
