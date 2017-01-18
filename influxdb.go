@@ -71,7 +71,8 @@ func (r *reporter) run() {
 		select {
 		case <-intervalTicker:
 			if err := r.send(); err != nil {
-				log.Printf("unable to send metrics to InfluxDB. err=%v", err)
+				log.Printf("unable to send metrics to InfluxDB. database=%s err=%v",
+					err, r.database)
 			}
 		case <-pingTicker:
 			_, _, err := r.client.Ping()
@@ -90,6 +91,15 @@ func (r *reporter) send() error {
 	var pts []client.Point
 
 	//log.Println("reporter ....")
+	// 先snapshot datamap, datamap的各个key都导入到
+	// 其他meter中
+	r.reg.Each(func(name string, i interface{}) {
+		switch m := i.(type) {
+		case metrics.DataMap:
+			m.Snapshot(r.reg)
+		}
+	})
+
 	r.reg.Each(func(name string, i interface{}) {
 		now := time.Now()
 
@@ -138,20 +148,6 @@ func (r *reporter) send() error {
 					"value": ms.Value(),
 				},
 				Time: now,
-			})
-
-		case metrics.GaugeMap:
-			ms := metric.Snapshot()
-			keys := ms.Keys()
-			values := map[string]interface{}{}
-			for _, key := range keys {
-				values[key] = ms.Value(key)
-			}
-			pts = append(pts, client.Point{
-				Measurement: fmt.Sprintf("%s.gaugemap", name),
-				Tags:        r.tags,
-				Fields:      values,
-				Time:        now,
 			})
 
 		case metrics.GaugeFloat64:
@@ -227,6 +223,8 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+		case metrics.DataMap:
+		// avoid warning
 		default:
 			log.Println("unknown metrics type.")
 		}
