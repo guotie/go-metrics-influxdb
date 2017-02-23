@@ -114,9 +114,13 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+
 		case metrics.PeriodCounter:
 			//log.Println("   period counter ....")
 			ps := metric.Snapshot()
+			if ps.Writable() == false {
+				break
+			}
 			vals := map[string]interface{}{
 				"value": ps.Count(),
 			}
@@ -161,6 +165,34 @@ func (r *reporter) send() error {
 				Time: now,
 			})
 
+		case metrics.CondInt:
+			ms := metric.Snapshot()
+			if ms.Writable() {
+				//fmt.Printf("now=%v metrics.CondInt: name=%s value=%v writable: %v\n",
+				//	now, name, ms.Value(), ms.Writable())
+				pts = append(pts, client.Point{
+					Measurement: fmt.Sprintf("%s.condint", name),
+					Tags:        r.tags,
+					Fields: map[string]interface{}{
+						"value": ms.Value(),
+					},
+					Time: now,
+				})
+			}
+
+		case metrics.CondFloat:
+			ms := metric.Snapshot()
+			if ms.Writable() {
+				pts = append(pts, client.Point{
+					Measurement: fmt.Sprintf("%s.condfloat", name),
+					Tags:        r.tags,
+					Fields: map[string]interface{}{
+						"value": ms.Value(),
+					},
+					Time: now,
+				})
+			}
+
 		case metrics.Histogram:
 			ms := metric.Snapshot()
 			ps := ms.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
@@ -183,6 +215,7 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+
 		case metrics.Meter:
 			ms := metric.Snapshot()
 			pts = append(pts, client.Point{
@@ -197,6 +230,7 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+
 		case metrics.Timer:
 			ms := metric.Snapshot()
 			ps := ms.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
@@ -223,8 +257,10 @@ func (r *reporter) send() error {
 				},
 				Time: now,
 			})
+
 		case metrics.DataMap:
 		// avoid warning
+
 		default:
 			log.Println("unknown metrics type.")
 		}
