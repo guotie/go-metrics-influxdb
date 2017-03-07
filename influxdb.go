@@ -116,7 +116,6 @@ func (r *reporter) send() error {
 			})
 
 		case metrics.PeriodCounter:
-			//log.Println("   period counter ....")
 			ps := metric.Snapshot()
 			if ps.Writable() == false {
 				break
@@ -134,6 +133,7 @@ func (r *reporter) send() error {
 				vals[p+"_count"] = c
 				vals[p+"_rate"] = r
 			}
+
 			if insert {
 				pts = append(pts, client.Point{
 					Measurement: fmt.Sprintf("%s.periodcount", name),
